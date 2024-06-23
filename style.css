@@ -1,0 +1,86 @@
+html,
+body {
+  font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+}
+
+#about {
+  float: right;
+  margin: 3px 5px 0 0;
+}
+#about img {
+  width: 32px;
+}
+header {
+  text-align: center;
+}
+
+h1, h2 {
+  background-color: khaki;
+  padding: 5px;
+  border-top: 2px solid black;
+  box-shadow: 0 6px 3px -2px lightgray;
+}
+
+.parent {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.box {
+  flex: 1 1 150px;
+  /*  Stretching: */
+  flex: 0 1 150px;
+  /*  No stretching: */
+  margin: 25px;
+  padding: 20px;
+  background-color: beige;
+}
+
+#qrcode {
+  padding: 20px;
+}
+
+#otps {
+  border-collapse: collapse;
+}
+
+#otps th {
+  border-bottom: 1px solid black;
+}
+
+#otps td {
+  padding: 10px;
+}
+
+#otps td,
+#otps th {
+  border-left: 1px solid black;
+  border-right: 1px solid black;
+  min-width: 100px;
+  text-align: center;
+}
+
+.countdown {
+  width: 0%;
+  height: 10px;
+  background-color: black;
+  border-radius: 5px
+}
+
+.action {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.valid {
+  background-color: lightgreen;
+}
+
+.invalid {
+  background-color: lightcoral;
+}
+
+#drift {
+  width: 3rem;
+}

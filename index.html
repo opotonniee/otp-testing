@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name= "keywords" content="otp, totp, hotp, oath, qrcode">
+  <title>OTP Testing</title>
+  <link rel="shortcut icon" href="favicon.png">
+  <link href="style.css" rel="stylesheet">
+</head>
+
+<body>
+
+  <header>
+    <h1>
+      OTP Testing tool
+      <span id="about">
+        <a href="https://github.com/opotonniee/otp-testing">
+          <img class="icon" src="github-mark.svg" />
+        </a>
+      </span>
+    </h1>
+  </header>
+
+  <div class="parent">
+
+    <div class="box">
+      <h2>OTP Configuration</h2>
+      <table id="config"></table>
+      <div id="qrcode"></div>
+    </div>
+
+    <div class="box">
+      <h2>Valid OTPs</h2>
+      <table id="otps">
+        <tr>
+          <th>Previous</th>
+          <th>Current</th>
+          <th>Next</th>
+        </tr>
+        <tr>
+          <td id="previous"></td>
+          <td id="current"></td>
+          <td id="next"></td>
+        </tr>
+        <tr class="t">
+          <td colspan="3">
+            <div class="countdown"></div>
+          </td>
+        </tr>
+      </table>
+
+      <h2>Verify OTP</h2>
+      <input id="otp-in" type="text" placeholder="Enter OTP">
+
+      <h2>Resync OTP</h2>
+      <input id="otp-sync1" type="text" placeholder="1st OTP"><br>
+      <input id="otp-sync2" type="text" placeholder="Next OTP"><br>
+      Search window:
+      <select id="resync-window">
+        <option value="10">10</option>
+        <option value="100" selected>100</option>
+        <option value="1000">1000</option>
+        <option value="1000">10000</option>
+      </select><br>
+      <span class="t">Drift is <input type="number" id="drift" value="0"></span>
+      <button id="resync">Resync</button>
+      <div id="resync-status"></div>
+    </div>
+
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+    integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cash/8.1.5/cash.min.js"
+    integrity="sha512-rUmgzTTLW3Ncifitwec3TMK8qQJK17vYU7r7RjMnXfg2SoEWvVWn7doqhtB8j0KTIHIr3iv4CfOXXEJbPFll6Q=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://opotonniee.github.io/js-config/dist/js-config.js"></script>
+  <script src="utils.js"></script>
+  <script src="script.js"></script>
+
+</body>
+
+</html>
