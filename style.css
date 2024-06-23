@@ -38,7 +38,14 @@ h1, h2 {
 }
 
 #qrcode {
-  padding: 20px;
+  padding: 20px 20px 5px 20px;
+}
+
+#uri {
+  width: 100%;
+  display: block;
+  text-align: center;
+  margin-bottom: 10px;
 }
 
 #otps {

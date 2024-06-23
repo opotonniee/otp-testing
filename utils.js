@@ -72,18 +72,14 @@ function base32Encode(secret, padding) {
   ----------------------------------------------------- */
 
 async function generateKey(secret, algo, counter) {
-  const digest = {
-    "SHA1": "SHA-1",
-    "SHA256": "SHA-256",
-    "SHA512": "SHA-512"
-  };
+  const digest = algo.replace("SHA", "SHA-");
   const Crypto = window.crypto.subtle;
   let secretBytes = getSecretBytes(secret);
   const counterArray = this.padCounter(counter);
   const key = await Crypto.importKey(
     'raw',
     secretBytes,
-    { name: 'HMAC', hash: { name: digest[algo] } },
+    { name: 'HMAC', hash: { name: digest } },
     false,
     ['sign']
   );
@@ -104,22 +100,15 @@ function padCounter(counter) {
 }
 
 function DT(HS) {
-  const offset = HS[HS.length - 1] & 0b1111;
+  const offset = HS[HS.length - 1] & 0xf;
   const P = ((HS[offset] & 0x7f) << 24) | (HS[offset + 1] << 16) | (HS[offset + 2] << 8) | HS[offset + 3];
-  const pString = P.toString(2);
-  return pString;
-}
-
-function truncate(uKey) {
-  const Sbits = DT(uKey);
-  const Snum = parseInt(Sbits, 2);
-  return Snum;
+  return P;
 }
 
 async function generateHOTP(secret, algo, digits, counter) {
   const key = await generateKey(secret, algo, counter);
   const uKey = new Uint8Array(key);
-  const Snum = truncate(uKey);
+  const Snum = DT(uKey);
   const padded = ('000000' + (Snum % (10 ** digits))).slice(-digits);
   return padded;
 }

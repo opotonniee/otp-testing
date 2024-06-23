@@ -34,10 +34,10 @@ function configChanged() {
     params = "period=" + config.period;
   }
 
-  let url = "otpauth://" + config.type
+  let uri = "otpauth://" + config.type
     + "/" + encodeURIComponent(config.issuer)
     + ":" + encodeURIComponent(config.name)
-    + "?secret=" + base32Encode(getSecret(), base32padding)
+    + "?secret=" + encodeURIComponent(base32Encode(getSecret(), base32padding))
     + "&issuer=" + encodeURIComponent(config.issuer)
     + "&algorithm=" + config.algo
     + "&digits=" + config.digits
@@ -45,18 +45,21 @@ function configChanged() {
 
   $("#qrcode")[0].innerHTML = "";
   var qrcode = new QRCode("qrcode", {
-    text: url,
+    text: uri,
     width: 200,
     height: 200,
     colorDark: "#000000",
     colorLight: "#ffffff",
     correctLevel: QRCode.CorrectLevel.H,
   });
+  $("#uri").prop("href", uri);
 
   showOTP();
 }
 
 jsc.onChange(configChanged).showConfigTable($("#config")[0], false);
+
+// move config settings to where they are used
 $("#jsconfig-row-window").detach().appendTo("#otps-config");
 $("#jsconfig-row-issuer").detach().appendTo("#qrcode-config");
 $("#jsconfig-row-name").detach().appendTo("#qrcode-config");
@@ -79,12 +82,20 @@ function getOTPCounter() {
 }
 
 let validOTPs;
-async function showOTP() {
+function showOTP() {
 
-  function addOTP(otp) {
-    validOTPs.push(otp);
-    const re = new RegExp("(\\d{" + config.digits / 2 + "})", "g");
-    return `<div>${otp.replace(re, "$1&nbsp;").replace(/(&nbsp;$)/, "")}</div>`;
+  function addOTP(counter, col) {
+    generateHOTP(
+      getSecret(),
+      config.algo,
+      config.digits,
+      counter
+    ).then((otp) => {
+      validOTPs.push(otp);
+      const re = new RegExp("(\\d{" + config.digits / 2 + "})", "g");
+      $(col)[0].innerHTML +=
+        `<div>${otp.replace(re, "$1&nbsp;").replace(/(&nbsp;$)/, "")}</div>`;
+    });
   }
 
   function updateTimeLeft() {
@@ -94,34 +105,15 @@ async function showOTP() {
     return timeLeft;
   }
 
-  const counter = getOTPCounter();
-  let otp = await generateHOTP(
-    getSecret(),
-    config.algo,
-    config.digits,
-    counter
-  );
   validOTPs = [];
-  $("#current")[0].innerHTML = addOTP(otp);
-  $("#previous")[0].innerHTML = "";
-  $("#next")[0].innerHTML = "";
+  $("#previous, #current, #next").text(""); // empty cols
+  const counter = getOTPCounter();
+  addOTP(counter, "#current");
   for (let w = 1; w <= config.window; w++) {
     if (counter - w >= 0) {
-      otp = await generateHOTP(
-        getSecret(),
-        config.algo,
-        config.digits,
-        counter - w
-      );
-      $("#previous")[0].innerHTML += addOTP(otp);
+      addOTP(counter - w, "#previous");
     }
-    otp = await generateHOTP(
-      getSecret(),
-      config.algo,
-      config.digits,
-      counter + w
-    );
-    $("#next")[0].innerHTML += addOTP(otp);
+    addOTP(counter + w, "#next");
   }
 
   updateTimeLeft();
