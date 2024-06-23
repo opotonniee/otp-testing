@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name= "keywords" content="otp, totp, hotp, oath, qrcode">
+  <meta name="keywords" content="otp, totp, hotp, oath, qrcode">
   <title>OTP Testing</title>
   <link rel="shortcut icon" href="favicon.png">
   <link href="style.css" rel="stylesheet">
@@ -28,7 +28,9 @@
     <div class="box">
       <h2>OTP Configuration</h2>
       <table id="config"></table>
+      <h2>QR Code</h2>
       <div id="qrcode"></div>
+      <table id="qrcode-config"></table>
     </div>
 
     <div class="box">
@@ -50,21 +52,13 @@
           </td>
         </tr>
       </table>
+      <table id="otps-config"></table>
 
       <h2>Verify OTP</h2>
-      <input id="otp-in" type="text" placeholder="Enter OTP">
+      <table id="verif-config"></table>
 
       <h2>Resync OTP</h2>
-      <input id="otp-sync1" type="text" placeholder="1st OTP"><br>
-      <input id="otp-sync2" type="text" placeholder="Next OTP"><br>
-      Search window:
-      <select id="resync-window">
-        <option value="10">10</option>
-        <option value="100" selected>100</option>
-        <option value="1000">1000</option>
-        <option value="1000">10000</option>
-      </select><br>
-      <span class="t">Drift is <input type="number" id="drift" value="0"></span>
+      <table id="resync-config"></table>
       <button id="resync">Resync</button>
       <div id="resync-status"></div>
     </div>
@@ -77,6 +71,14 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cash/8.1.5/cash.min.js"
     integrity="sha512-rUmgzTTLW3Ncifitwec3TMK8qQJK17vYU7r7RjMnXfg2SoEWvVWn7doqhtB8j0KTIHIr3iv4CfOXXEJbPFll6Q=="
     crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-SF95ZEYMVY"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-SF95ZEYMVY');
+  </script>
   <script src="https://opotonniee.github.io/js-config/dist/js-config.js"></script>
   <script src="utils.js"></script>
   <script src="script.js"></script>
