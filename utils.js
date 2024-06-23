@@ -1,11 +1,46 @@
+function getSecretBytes(secret) {
+  let secretBytes = secret;
+  if (typeof (secretBytes) == "string") {
+    const encoder = new TextEncoder('utf-8');
+    secretBytes = encoder.encode(secret);
+  }
+  return secretBytes;
+}
+
+/* -----------------------------------------------------
+  Hex encoder/decoder
+  ----------------------------------------------------- */
+
+/**
+* convert byte array to hexa string
+* @param {array} byteArray - a byte array
+* @returns {string} the hexadecimal string representation of the array value
+*/
+function bytesToHex(byteArray) {
+  return Array.from(byteArray, function (byte) {
+    return ('0' + (byte & 0xFF).toString(16)).slice(-2);
+  }).join('').toUpperCase();
+}
+
+/**
+* Convert an hexa string to a byte array
+* @param {hex} string - the hexadecimal string representation of the array value
+* @returns {UInt8Array} the converted array value
+*/
+function hexToBytes(hex) {
+  let bytes = [];
+  for (let c = 0; c < hex.length; c += 2)
+    bytes.push(parseInt(hex.substr(c, 2), 16));
+  return new Uint8Array(bytes);
+}
+
 /* -----------------------------------------------------
   Base32 encoder
   Credit: https://github.com/LinusU/base32-encode/blob/master/index.js
   ----------------------------------------------------- */
 
 function base32Encode(secret, padding) {
-  const encoder = new TextEncoder('utf-8');
-  const buffer = encoder.encode(secret);
+  let buffer = getSecretBytes(secret);
   var alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
   var length = buffer.byteLength;
   var view = new Uint8Array(buffer);
@@ -43,8 +78,7 @@ async function generateKey(secret, algo, counter) {
     "SHA512": "SHA-512"
   };
   const Crypto = window.crypto.subtle;
-  const encoder = new TextEncoder('utf-8');
-  const secretBytes = encoder.encode(secret);
+  let secretBytes = getSecretBytes(secret);
   const counterArray = this.padCounter(counter);
   const key = await Crypto.importKey(
     'raw',

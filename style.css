@@ -81,6 +81,10 @@ h1, h2 {
   background-color: lightcoral;
 }
 
-#drift {
+#drift, #window {
   width: 3rem;
+}
+
+#resync {
+  margin: 10px;
 }
