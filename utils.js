@@ -104,7 +104,7 @@ function padCounter(counter) {
 }
 
 function DT(HS) {
-  const offset = HS[19] & 0b1111;
+  const offset = HS[HS.length - 1] & 0b1111;
   const P = ((HS[offset] & 0x7f) << 24) | (HS[offset + 1] << 16) | (HS[offset + 2] << 8) | HS[offset + 3];
   const pString = P.toString(2);
   return pString;
