@@ -38,7 +38,7 @@ h1, h2 {
 }
 
 #qrcode {
-  padding: 20px 20px 5px 20px;
+  padding: 5px 20px 5px 20px;
 }
 
 #uri {
@@ -94,4 +94,5 @@ h1, h2 {
 
 #resync {
   margin: 10px;
+  padding: 5px 10px;
 }
