@@ -100,9 +100,11 @@ async function generateHOTPs(counter, count, fn) {
 let validOTPs;
 let prevConfig;
 let REFRESHING_CONFIG = [
-  "type", "secret", "issuer", "name", "algo", "digits", "period", "counter", "window" ];
+  "type", "secret", "issuer", "name", "algo", "digits", "period", "window"];
 
 function showOTP() {
+
+  const counter = getOTPCounter();
 
   // only refresh if a significant config changed
   if (prevConfig) {
@@ -112,12 +114,14 @@ function showOTP() {
         needsRefresh = true;
         break;
       }
+      needsRefresh = counter != prevConfig.counter;
     }
     if (!needsRefresh) {
       return;
     }
   }
   prevConfig = JSON.parse(JSON.stringify(config));
+  prevConfig.counter = counter;
 
   function updateTimeLeft() {
     const timeLeft = (counter - config.drift + 1) * config.period * 1000 - Date.now();
@@ -128,7 +132,7 @@ function showOTP() {
 
   validOTPs = [];
   $("#previous, #current, #next").text(""); // empty cols
-  const counter = getOTPCounter(),
+  const
     from = Math.max(0, counter - config.window),
     to = counter + config.window + 1;
 
@@ -253,7 +257,7 @@ $("#resync").on("click", async () => {
       resyncState = 0;
     }
   });
-  
+
   if (resyncState == 2) {
     showOTP();
     resyncStatus("Resynchronized!");
