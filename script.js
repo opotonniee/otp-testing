@@ -15,7 +15,7 @@ let jsc = new JsConfig({ autoSave: true, version: 1, capitalize: true })
   .add("next-OTP", JsConfig.textType("[0-9]*"), "", "Next OTP expected", "")
   .add("drift", JsConfig.numType(0, 99999, 1), 0, "Clock drift in number of periods", "t")
   .add("OTP", JsConfig.textType("[0-9]*"), "", "OTP to verify", "")
-  .add("search-periods", JsConfig.listType("10", "100", "1000", "10000"), "10", "Number of periods to look in", "")
+  .add("resync-window", JsConfig.listType("10", "100", "1000", "10000"), "10", "Size of resync window to look in", "")
   .add("window", JsConfig.numType(0, 40, 1), 2, "Number of OTPs to verify before and after the current one", "");
 let config = jsc._,
   timer,
@@ -67,7 +67,7 @@ $("#jsconfig-row-first-OTP").detach().appendTo("#resync-config");
 $("#jsconfig-row-next-OTP").detach().appendTo("#resync-config");
 $("#jsconfig-row-drift").detach().appendTo("#verif-config");
 $("#jsconfig-row-OTP").detach().appendTo("#verif-config");
-$("#jsconfig-row-search-periods").detach().appendTo("#resync-config");
+$("#jsconfig-row-resync-window").detach().appendTo("#resync-config");
 
 // -----------------------------------------
 // OTP utils
@@ -81,22 +81,43 @@ function getOTPCounter() {
     );
 }
 
-let validOTPs;
-function showOTP() {
-
-  function addOTP(counter, col) {
-    generateHOTP(
+async function generateHOTPs(counter, count, fn) {
+  let c = counter,
+    to = counter + count;
+  while (c < to) {
+    if (fn(await generateHOTP(
       getSecret(),
       config.algo,
       config.digits,
-      counter
-    ).then((otp) => {
-      validOTPs.push(otp);
-      const re = new RegExp("(\\d{" + config.digits / 2 + "})", "g");
-      $(col)[0].innerHTML +=
-        `<div>${otp.replace(re, "$1&nbsp;").replace(/(&nbsp;$)/, "")}</div>`;
-    });
+      c
+    ), c)) {
+      break;
+    }
+    c++;
   }
+}
+
+let validOTPs;
+let prevConfig;
+let REFRESHING_CONFIG = [
+  "type", "secret", "issuer", "name", "algo", "digits", "period", "counter", "window" ];
+
+function showOTP() {
+
+  // only refresh if a significant config changed
+  if (prevConfig) {
+    let needsRefresh = false;
+    for (let cfg of REFRESHING_CONFIG) {
+      if (config[cfg] != prevConfig[cfg]) {
+        needsRefresh = true;
+        break;
+      }
+    }
+    if (!needsRefresh) {
+      return;
+    }
+  }
+  prevConfig = JSON.parse(JSON.stringify(config));
 
   function updateTimeLeft() {
     const timeLeft = (counter - config.drift + 1) * config.period * 1000 - Date.now();
@@ -107,33 +128,37 @@ function showOTP() {
 
   validOTPs = [];
   $("#previous, #current, #next").text(""); // empty cols
-  const counter = getOTPCounter();
-  addOTP(counter, "#current");
-  for (let w = 1; w <= config.window; w++) {
-    if (counter - w >= 0) {
-      addOTP(counter - w, "#previous");
+  const counter = getOTPCounter(),
+    from = Math.max(0, counter - config.window),
+    to = counter + config.window + 1;
+
+  generateHOTPs(from, to - from, (otp, pos) => {
+    let col = pos == counter ? "#current" : (pos < counter ? "#previous" : "#next");
+    validOTPs.push(otp);
+    const re = new RegExp("(\\d{" + config.digits / 2 + "})", "g");
+    $(col)[0].innerHTML +=
+      `<div>${otp.replace(re, "$1&nbsp;").replace(/(&nbsp;$)/, "")}</div>`;
+  }).then(() => {
+
+    updateTimeLeft();
+    verifyOTP();
+
+    if (timer) {
+      clearTimeout(timer);
+      timer = undefined;
     }
-    addOTP(counter + w, "#next");
-  }
 
-  updateTimeLeft();
-  verifyOTP();
-
-  if (timer) {
-    clearTimeout(timer);
-    timer = undefined;
-  }
-
-  if (config.type == "totp") {
-    timer = setInterval(() => {
-      const timeLeft = updateTimeLeft();
-      if (timeLeft < 0) {
-        $(".countdown").css("width", "100%");
-        return showOTP();
-      }
-      updateTimeLeft();
-    }, 1000);
-  }
+    if (config.type == "totp") {
+      timer = setInterval(() => {
+        const timeLeft = updateTimeLeft();
+        if (timeLeft < 0) {
+          $(".countdown").css("width", "100%");
+          return showOTP();
+        }
+        updateTimeLeft();
+      }, 1000);
+    }
+  });
 }
 
 // -----------------------------------------
@@ -198,7 +223,7 @@ $("#resync").on("click", async () => {
       $("#resync-status").text("");
     }, 2000);
   }
-  const resyncWin = Number.parseInt(config["search-periods"]);
+  const resyncWin = Number.parseInt(config["resync-window"]);
   const resyncOTPs = [
     parseOtp(config["first-OTP"]),
     parseOtp(config["next-OTP"])
@@ -208,24 +233,18 @@ $("#resync").on("click", async () => {
     to = counter + resyncWin;
   let resyncState = 0;
 
-  for (let c = from; c <= to; c++) {
-    let otp = await generateHOTP(
-      getSecret(),
-      config.algo,
-      config.digits,
-      c
-    );
+  await generateHOTPs(from, to - from, (otp, pos) => {
     if (otp == resyncOTPs[resyncState]) {
       if (resyncState == 1) {
         resyncState++;
         // found 2 consecutive!
         if (config.type == "hotp") {
-          updateCounter(c + 1);
+          updateCounter(pos + 1);
           // added 1 for hotp because 2nd otp has been consumed
         } else {
-          updateDrift(c - counter + config.drift);
+          updateDrift(pos - counter + config.drift);
         }
-        break;
+        return true;
       } else {
         // found 1
         resyncState++;
@@ -233,8 +252,14 @@ $("#resync").on("click", async () => {
     } else {
       resyncState = 0;
     }
+  });
+  
+  if (resyncState == 2) {
+    showOTP();
+    resyncStatus("Resynchronized!");
+  } else {
+    resyncStatus("OTPs not found.");
   }
-  resyncStatus(resyncState == 2 ? "Resynchronized!" : "OTPs not found.");
   $("#resync").prop("disabled", false);
 });
 
