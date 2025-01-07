@@ -13,15 +13,16 @@ let jsc = new JsConfig({ autoSave: true, version: 1, capitalize: true })
   .add("counter", JsConfig.numType(0, 99999, 1), 0, "Event counter", "h")
   .add("first-OTP", JsConfig.textType("[0-9]*"), "", "First OTP to look for", "")
   .add("next-OTP", JsConfig.textType("[0-9]*"), "", "Next OTP expected", "")
-  .add("drift", JsConfig.numType(0, 99999, 1), 0, "Clock drift in number of periods", "t")
+  .add("drift", JsConfig.numType(-99999, 99999, 1), 0, "Clock drift in number of periods", "t")
   .add("OTP", JsConfig.textType("[0-9]*"), "", "OTP to verify", "")
   .add("resync-window", JsConfig.listType("10", "100", "1000", "10000"), "10", "Size of resync window to look in", "")
   .add("window", JsConfig.numType(0, 40, 1), 2, "Number of OTPs to verify before and after the current one", "");
-let config = jsc._,
+let config = jsc.value,
   timer,
   base32padding = true;
 
 function configChanged() {
+  console.log("Configuration updated");
   let params;
   if (config.type == "hotp") {
     $(".t").hide();
