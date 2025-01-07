@@ -28,7 +28,7 @@ function configChanged() {
     $(".t").hide();
     $(".h").show();
     params = "counter=" + config.counter;
-    updateDrift(0, true);
+    //updateDrift(0, true);
   } else {
     $(".h").hide();
     $(".t").show();
@@ -102,6 +102,7 @@ let validOTPs;
 let prevConfig;
 let REFRESHING_CONFIG = [
   "type", "secret", "issuer", "name", "algo", "digits", "period", "window"];
+let singleton = 0;
 
 function showOTP() {
 
@@ -121,8 +122,11 @@ function showOTP() {
       return;
     }
   }
-  prevConfig = JSON.parse(JSON.stringify(config));
+
+  prevConfig = jsc.toJSON();
   prevConfig.counter = counter;
+
+  if (singleton++) return --singleton; // show is already running
 
   function updateTimeLeft() {
     const timeLeft = (counter - config.drift + 1) * config.period * 1000 - Date.now();
@@ -163,6 +167,7 @@ function showOTP() {
         updateTimeLeft();
       }, 1000);
     }
+    singleton--;
   });
 }
 
