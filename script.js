@@ -16,12 +16,16 @@ let jsc = new JsConfig({ autoSave: true, version: 1, capitalize: true })
   .add("drift", JsConfig.numType(-99999, 99999, 1), 0, "Clock drift in number of periods", "t")
   .add("OTP", JsConfig.textType("[0-9]*"), "", "OTP to verify", "")
   .add("resync-window", JsConfig.listType("10", "100", "1000", "10000"), "10", "Size of resync window to look in", "")
+  .add("batch-size", JsConfig.numType(1, 100000, 1), 50, "Number of OTPs to generate as batch", "")
   .add("window", JsConfig.numType(0, 40, 1), 2, "Number of OTPs to verify before and after the current one", "");
 let config = jsc.value,
   timer,
   base32padding = true;
 
 function configChanged() {
+  if (!isRedrawNeeded()) {
+    return;
+  }
   console.log("Configuration updated");
   let params;
   if (config.type == "hotp") {
@@ -62,6 +66,8 @@ jsc.onChange(configChanged).showConfigTable($("#config")[0], false);
 
 // move config settings to where they are used
 $("#jsconfig-row-window").detach().appendTo("#otps-config");
+$("#jsconfig-row-batch-size").detach().appendTo("#otps-config");
+$("#batch-size").after(" <button id='batch-generate'>Generate</button>")
 $("#jsconfig-row-issuer").detach().appendTo("#qrcode-config");
 $("#jsconfig-row-name").detach().appendTo("#qrcode-config");
 $("#jsconfig-row-first-OTP").detach().appendTo("#resync-config");
@@ -104,27 +110,33 @@ let REFRESHING_CONFIG = [
   "type", "secret", "issuer", "name", "algo", "digits", "period", "window"];
 let singleton = 0;
 
-function showOTP() {
-
+function isRedrawNeeded() {
   const counter = getOTPCounter();
+  let changed = false;
 
   // only refresh if a significant config changed
   if (prevConfig) {
-    let needsRefresh = false;
-    for (let cfg of REFRESHING_CONFIG) {
-      if (config[cfg] != prevConfig[cfg]) {
-        needsRefresh = true;
-        break;
+    if (counter != prevConfig.counter) {
+      changed = true;
+    } else {
+      for (let cfg of REFRESHING_CONFIG) {
+        if (config[cfg] != prevConfig[cfg]) {
+          changed = true;
+          break;
+        }
       }
-      needsRefresh = counter != prevConfig.counter;
     }
-    if (!needsRefresh) {
-      return;
-    }
+  } else {
+    changed = true;
   }
-
   prevConfig = jsc.toJSON();
   prevConfig.counter = counter;
+  return changed;
+}
+
+function showOTP() {
+
+  const counter = getOTPCounter();
 
   if (singleton++) return --singleton; // show is already running
 
@@ -271,6 +283,25 @@ $("#resync").on("click", async () => {
     resyncStatus("OTPs not found.");
   }
   $("#resync").prop("disabled", false);
+});
+
+// Batch generation
+
+$("#batch-generate").on("click", async () => {
+  let batch = $("#batch"),
+    from = getOTPCounter(),
+    count = config["batch-size"];
+  if (typeof count != "number" || count < 1 || count > 100000) {
+    batch.text("Invalid batch size: should between 1 and 100.000");
+    return;
+  }
+  batch.text("");
+  let txt = "";
+  await generateHOTPs(from, count, function(otp, pos) {
+    txt += otp + "\n";
+  });
+  batch.val(txt);
+  $("#batch-div").show();
 });
 
 // Go!
