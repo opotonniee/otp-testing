@@ -97,6 +97,9 @@ h1, h2 {
   padding: 5px 10px;
 }
 
-#batch-div {
+#batch-div, #batch-copied {
   display:none;
+}
+#batch {
+  margin: 10px 0 0 0;
 }

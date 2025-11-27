@@ -304,6 +304,19 @@ $("#batch-generate").on("click", async () => {
   $("#batch-div").show();
 });
 
+$("#batch-copy").on("click", async () => {
+  const type = "text/plain";
+  const clipboardItemData = {
+    [type]: $("#batch").val(),
+  };
+  const clipboardItem = new ClipboardItem(clipboardItemData);
+  await navigator.clipboard.write([clipboardItem]);
+  $("#batch-copied").show();
+  setTimeout(() => {
+    $("#batch-copied").hide();
+  }, 2000);
+});
+
 // Go!
 
 configChanged();
