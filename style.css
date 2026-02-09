@@ -67,6 +67,10 @@ h1, h2 {
   min-width: 100px;
   text-align: center;
 }
+#otps td {
+  font-family: monospace;
+  font-size: large;
+}
 
 .countdown {
   width: 0%;

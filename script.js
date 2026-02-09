@@ -4,17 +4,18 @@
 
 let jsc = new JsConfig({ autoSave: true, version: 1, capitalize: true })
   .add("type", JsConfig.listType("totp", "hotp"), "totp", "OTP type", "")
-  .add("secret", JsConfig.textType(".*"), "0123456789ABCDEF1234", "Secret Key", "")
-  .add("issuer", JsConfig.textType(" *[^ ]* *"), "ACME", "Issuer name", "")
-  .add("name", JsConfig.textType(" *[^ ]* *"), "johndoe", "User name", "")
+  .add("secret", JsConfig.textType("^[0-9A-Fa-f]*$"), "0123456789ABCDEF1234", "Secret Key (in hexa)", "")
+  .add("issuer", JsConfig.textType("^ *[^ ]* *$"), "ACME", "Issuer name", "")
+  .add("name", JsConfig.textType("^ *[^ ]* *$"), "johndoe", "User name", "")
   .add("algo", JsConfig.listType("SHA1", "SHA256", "SHA512"), "SHA1", "Digest algorithm", "")
   .add("digits", JsConfig.listType("6", "8", "10"), "6", "Number of OTP digits", "")
   .add("period", JsConfig.listType("5", "15", "30", "60", "120"), "30", "Validity period in second", "t")
-  .add("counter", JsConfig.numType(0, 99999, 1), 0, "Event counter", "h")
-  .add("first-OTP", JsConfig.textType("[0-9]*"), "", "First OTP to look for", "")
-  .add("next-OTP", JsConfig.textType("[0-9]*"), "", "Next OTP expected", "")
+  .add("counter", JsConfig.numType(0, 999999999, 1), 0, "Event counter", "h")
+  .add("alphanum", JsConfig.boolType(), false, "Use alphanumeric characters", "")
+  .add("first-OTP", JsConfig.textType("^[0-9]*$"), "", "First OTP to look for", "")
+  .add("next-OTP", JsConfig.textType("^[0-9]*$"), "", "Next OTP expected", "")
   .add("drift", JsConfig.numType(-99999, 99999, 1), 0, "Clock drift in number of periods", "t")
-  .add("OTP", JsConfig.textType("[0-9]*"), "", "OTP to verify", "")
+  .add("OTP", JsConfig.textType("^[0-9]*$"), "", "OTP to verify", "")
   .add("resync-window", JsConfig.listType("10", "100", "1000", "10000"), "10", "Size of resync window to look in", "")
   .add("batch-size", JsConfig.numType(1, 100000, 1), 50, "Number of OTPs to generate as batch", "")
   .add("window", JsConfig.numType(0, 40, 1), 2, "Number of OTPs to verify before and after the current one", "");
@@ -26,7 +27,7 @@ function configChanged() {
   if (!isRedrawNeeded()) {
     return;
   }
-  console.log("Configuration updated");
+  $('input').removeClass("invalid");
   let params;
   if (config.type == "hotp") {
     $(".t").hide();
@@ -48,21 +49,38 @@ function configChanged() {
     + "&digits=" + config.digits
     + "&" + params;
 
+  if (config.alphanum) {
+    uri += "&alphanum=true";
+  }
+
   $("#qrcode")[0].innerHTML = "";
-  var qrcode = new QRCode("qrcode", {
-    text: uri,
-    width: 200,
-    height: 200,
-    colorDark: "#000000",
-    colorLight: "#ffffff",
-    correctLevel: QRCode.CorrectLevel.H,
-  });
+  try {
+    var qrcode = new QRCode("qrcode", {
+      text: uri,
+      width: 200,
+      height: 200,
+      colorDark: "#000000",
+      colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.H,
+    });
+  } catch (error) {
+    $("#qrcode")[0].innerHTML = "Error generating QR code: " + error;
+  }
   $("#uri").prop("href", uri);
 
   showOTP();
 }
 
-jsc.onChange(configChanged).showConfigTable($("#config")[0], false);
+jsc
+  .onChange(configChanged)
+  .onError((err, data) => {
+    if (data?.target) {
+      let input = $("#" + data.target);
+      input.addClass("invalid");
+      input[0].focus();
+    }
+  })
+  .showConfigTable($("#config")[0], false);
 
 // move config settings to where they are used
 $("#jsconfig-row-window").detach().appendTo("#otps-config");
@@ -75,6 +93,8 @@ $("#jsconfig-row-next-OTP").detach().appendTo("#resync-config");
 $("#jsconfig-row-drift").detach().appendTo("#verif-config");
 $("#jsconfig-row-OTP").detach().appendTo("#verif-config");
 $("#jsconfig-row-resync-window").detach().appendTo("#resync-config");
+// add warning
+$("#jsconfig-row-alphanum td:nth-child(2)").append("<span class='warning' title='Warning: this feature is experimental and not standard'>⚠️🧪 Not standard</span>");
 
 // -----------------------------------------
 // OTP utils
@@ -91,8 +111,9 @@ function getOTPCounter() {
 async function generateHOTPs(counter, count, fn) {
   let c = counter,
     to = counter + count;
+  generateFn = config.alphanum ? generateAlphanumHOTP : generateHOTP;
   while (c < to) {
-    if (fn(await generateHOTP(
+    if (fn(await generateFn(
       getSecret(),
       config.algo,
       config.digits,
@@ -107,7 +128,7 @@ async function generateHOTPs(counter, count, fn) {
 let validOTPs;
 let prevConfig;
 let REFRESHING_CONFIG = [
-  "type", "secret", "issuer", "name", "algo", "digits", "period", "window"];
+  "type", "secret", "issuer", "name", "algo", "digits", "period", "alphanum", "window"];
 let singleton = 0;
 
 function isRedrawNeeded() {
@@ -136,6 +157,7 @@ function isRedrawNeeded() {
 
 function showOTP() {
 
+  $("#batch-div").hide();
   const counter = getOTPCounter();
 
   if (singleton++) return --singleton; // show is already running
@@ -156,7 +178,7 @@ function showOTP() {
   generateHOTPs(from, to - from, (otp, pos) => {
     let col = pos == counter ? "#current" : (pos < counter ? "#previous" : "#next");
     validOTPs.push(otp);
-    const re = new RegExp("(\\d{" + config.digits / 2 + "})", "g");
+    const re = new RegExp("(\\w{" + config.digits / 2 + "})", "g");
     $(col)[0].innerHTML +=
       `<div>${otp.replace(re, "$1&nbsp;").replace(/(&nbsp;$)/, "")}</div>`;
   }).then(() => {
@@ -219,7 +241,7 @@ function updateCounter(newCounter) {
 // Secret generation
 // -----------------------------------------
 
-const secretLabel = $($("td[title='Secret Key']")[0]);
+const secretLabel = $($("#jsconfig-row-secret td:nth-child(1)")[0]);
 
 secretLabel.addClass("action");
 secretLabel.on("click", async () => {
@@ -231,7 +253,11 @@ secretLabel.on("click", async () => {
 });
 
 function getSecret() {
-  return hexToBytes(config.secret);
+  try {
+    return hexToBytes(config.secret);
+  } catch (error) {
+    alert("Invalid secret: must be hexa string (even length)");
+  }
 }
 
 // -----------------------------------------
@@ -297,7 +323,7 @@ $("#batch-generate").on("click", async () => {
   }
   batch.text("");
   let txt = "";
-  await generateHOTPs(from, count, function(otp, pos) {
+  await generateHOTPs(from, count, function (otp, pos) {
     txt += otp + "\n";
   });
   batch.val(txt);

@@ -28,6 +28,8 @@ function bytesToHex(byteArray) {
 * @returns {UInt8Array} the converted array value
 */
 function hexToBytes(hex) {
+  const isHex = /^[0-9A-Fa-f]+$/.test(hex);
+  if (!isHex) throw new Error("Invalid hexa string");
   let bytes = [];
   for (let c = 0; c < hex.length; c += 2)
     bytes.push(parseInt(hex.substr(c, 2), 16));
@@ -41,12 +43,12 @@ function hexToBytes(hex) {
 
 function base32Encode(secret, padding) {
   let buffer = getSecretBytes(secret);
-  var alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-  var length = buffer.byteLength;
-  var view = new Uint8Array(buffer);
-  var bits = 0;
-  var value = 0;
-  var output = '';
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  const length = buffer.byteLength;
+  const view = new Uint8Array(buffer);
+  let bits = 0;
+  let value = 0;
+  let output = '';
   for (var i = 0; i < length; i++) {
     value = (value << 8) | view[i];
     bits += 8;
@@ -84,7 +86,7 @@ async function generateKey(secret, algo, counter) {
     ['sign']
   );
   const HS = await Crypto.sign('HMAC', key, counterArray);
-  return HS;
+  return new Uint8Array(HS);
 }
 
 function padCounter(counter) {
@@ -99,16 +101,40 @@ function padCounter(counter) {
   return buffer;
 }
 
-function DT(HS) {
-  const offset = HS[HS.length - 1] & 0xf;
-  const P = ((HS[offset] & 0x7f) << 24) | (HS[offset + 1] << 16) | (HS[offset + 2] << 8) | HS[offset + 3];
+function DT(HS, bytes) {
+  if (HS.length < bytes) {
+    throw new Error("Hash length is less than the number of bytes to extract");
+  }
+  let offset = HS[HS.length - 1] & 0xf;
+  if (offset + bytes > HS.length) { // proprietary tweak for bytes > 4 as in alphanumeric HOTP
+    offset -= Math.max(4, bytes - (HS.length - offset));
+  }
+  let P = 0n; // use BigInt in case more than 8 bytes are needed
+  for (let i = 0; i < bytes; i++) {
+    P = (P << 8n) | BigInt((i == 0) ? HS[offset + i] & 0x7f : HS[offset + i] & 0xff);
+  }
   return P;
 }
 
+// This implements the standard HOTP algorithm as defined in RFC 4226
 async function generateHOTP(secret, algo, digits, counter) {
   const key = await generateKey(secret, algo, counter);
-  const uKey = new Uint8Array(key);
-  const Snum = DT(uKey);
-  const padded = ('000000' + (Snum % (10 ** digits))).slice(-digits);
+  const Snum = DT(key, digits > 10 ? 7 : 4); // /!\ digits > 10 is not standard
+  const padded = ('000000' + (Snum % (10n ** BigInt(digits)))).slice(-digits);
   return padded;
+}
+
+// This implements a proprietary variant algorithm as sugggest in appendix E.2 of RFC 4226, 
+// using alphanumeric characters instead of digits (base32 characters, with no ambiguous characters).
+async function generateAlphanumHOTP(secret, algo, digits, counter) {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  const key = await generateKey(secret, algo, counter);
+  let Snum = DT(key, digits > 10 ? 12 : 8);
+  let output = '';
+  for (let i = 0; i < digits; i++) {
+    const charIndex = Snum & 0x1fn;
+    Snum = Snum >> 5n;
+    output += alphabet[charIndex];
+  }
+  return output;
 }
