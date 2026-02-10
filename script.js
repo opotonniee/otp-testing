@@ -12,10 +12,10 @@ let jsc = new JsConfig({ autoSave: true, version: 1, capitalize: true })
   .add("period", JsConfig.listType("5", "15", "30", "60", "120"), "30", "Validity period in second", "t")
   .add("counter", JsConfig.numType(0, 999999999, 1), 0, "Event counter", "h")
   .add("alphanum", JsConfig.boolType(), false, "Use alphanumeric characters", "")
-  .add("first-OTP", JsConfig.textType("^[0-9]*$"), "", "First OTP to look for", "")
-  .add("next-OTP", JsConfig.textType("^[0-9]*$"), "", "Next OTP expected", "")
+  .add("first-OTP", JsConfig.textType("^[0-9A-Z ]*$"), "", "First OTP to look for", "")
+  .add("next-OTP", JsConfig.textType("^[0-9A-Z ]*$"), "", "Next OTP expected", "")
   .add("drift", JsConfig.numType(-99999, 99999, 1), 0, "Clock drift in number of periods", "t")
-  .add("OTP", JsConfig.textType("^[0-9]*$"), "", "OTP to verify", "")
+  .add("OTP", JsConfig.textType("^[0-9A-Z ]*$"), "", "OTP to verify", "")
   .add("resync-window", JsConfig.listType("10", "100", "1000", "10000"), "10", "Size of resync window to look in", "")
   .add("batch-size", JsConfig.numType(1, 100000, 1), 50, "Number of OTPs to generate as batch", "")
   .add("window", JsConfig.numType(0, 40, 1), 2, "Number of OTPs to verify before and after the current one", "");
@@ -24,10 +24,10 @@ let config = jsc.value,
   base32padding = true;
 
 function configChanged() {
+  $('input').removeClass("invalid");
   if (!isRedrawNeeded()) {
     return;
   }
-  $('input').removeClass("invalid");
   let params;
   if (config.type == "hotp") {
     $(".t").hide();
