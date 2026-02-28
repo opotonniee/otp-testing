@@ -1,12 +1,14 @@
-/* -----------------------------------------------------
+"use strict";
+
+  /* -----------------------------------------------------
   OTP testing code
   ----------------------------------------------------- */
 
 let jsc = new JsConfig({ autoSave: true, version: 1, capitalize: true })
   .add("type", JsConfig.listType("totp", "hotp"), "totp", "OTP type", "")
   .add("secret", JsConfig.textType("^[0-9A-Fa-f]*$"), "0123456789ABCDEF1234", "Secret Key (in hexa)", "")
-  .add("issuer", JsConfig.textType("^ *[^ ]* *$"), "ACME", "Issuer name", "")
-  .add("name", JsConfig.textType("^ *[^ ]* *$"), "johndoe", "User name", "")
+  .add("issuer", JsConfig.textType(), "ACME", "Issuer name", "")
+  .add("name", JsConfig.textType(), "John Doe", "User name", "")
   .add("algo", JsConfig.listType("SHA1", "SHA256", "SHA512"), "SHA1", "Digest algorithm", "")
   .add("digits", JsConfig.listType("6", "8", "10"), "6", "Number of OTP digits", "")
   .add("period", JsConfig.listType("5", "15", "30", "60", "120"), "30", "Validity period in second", "t")
@@ -111,7 +113,7 @@ function getOTPCounter() {
 async function generateHOTPs(counter, count, fn) {
   let c = counter,
     to = counter + count;
-  generateFn = config.alphanum ? generateAlphanumHOTP : generateHOTP;
+  const generateFn = config.alphanum ? generateAlphanumHOTP : generateHOTP;
   while (c < to) {
     if (fn(await generateFn(
       getSecret(),

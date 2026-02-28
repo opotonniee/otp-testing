@@ -1,3 +1,5 @@
+"use strict";
+
 function getSecretBytes(secret) {
   let secretBytes = secret;
   if (typeof (secretBytes) == "string") {
@@ -77,7 +79,7 @@ async function generateKey(secret, algo, counter) {
   const digest = algo.replace("SHA", "SHA-");
   const Crypto = window.crypto.subtle;
   let secretBytes = getSecretBytes(secret);
-  const counterArray = this.padCounter(counter);
+  const counterArray = padCounter(counter);
   const key = await Crypto.importKey(
     'raw',
     secretBytes,
@@ -124,7 +126,7 @@ async function generateHOTP(secret, algo, digits, counter) {
   return padded;
 }
 
-// This implements a proprietary variant algorithm as sugggest in appendix E.2 of RFC 4226, 
+// This implements a proprietary variant algorithm as suggested in appendix E.2 of RFC 4226,
 // using alphanumeric characters instead of digits (base32 characters, with no ambiguous characters).
 async function generateAlphanumHOTP(secret, algo, digits, counter) {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
