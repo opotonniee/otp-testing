@@ -73,23 +73,24 @@
 
   </div>
 
+  <!-- libs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
     integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA=="
     crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cash/8.1.5/cash.min.js"
     integrity="sha512-rUmgzTTLW3Ncifitwec3TMK8qQJK17vYU7r7RjMnXfg2SoEWvVWn7doqhtB8j0KTIHIr3iv4CfOXXEJbPFll6Q=="
     crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-SF95ZEYMVY"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-SF95ZEYMVY');
-  </script>
   <script src="/js-config/dist/js-config.js"></script>
   <script src="utils.js"></script>
   <script src="script.js"></script>
+  <!-- privacy-friendly usage stats -->
+  <script>
+    // Only load on production environment.
+    if (window.location.host !== 'opoto.github.io')
+        window.goatcounter = {no_onload: true}
+  </script>
+  <script data-goatcounter="https://otp-testing.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
 
 </body>
 
