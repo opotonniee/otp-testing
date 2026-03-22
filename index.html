@@ -85,13 +85,14 @@
   <script src="script.js"></script>
   <!-- privacy-friendly usage stats -->
   <script>
+    window.goatcounter = {
+      path: function(p) { return location.host + p } // add domain name
+    }
     // Only load on production environment, and manually opted-out
     if ((window.location.host !== 'opotonniee.github.io') ||
       (localStorage.getItem("goatcounter." + location.host) === "false") ||
       (localStorage.getItem("goatcounter.ALL") === "false")) {
-      window.goatcounter = {
-        no_onload: true
-      };
+      window.goatcounter.no_onload = true;
     }
   </script>
   <script data-goatcounter="https://otp-testing.goatcounter.com/count"
